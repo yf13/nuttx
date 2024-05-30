@@ -45,6 +45,7 @@
 #include <nuttx/binfmt/binfmt.h>
 #include <nuttx/drivers/drivers.h>
 #include <nuttx/init.h>
+#include <nuttx/lib/math32.h>
 
 #include "task/task.h"
 #include "sched/sched.h"
@@ -67,6 +68,10 @@
 /* This set of all CPUs */
 
 #define SCHED_ALL_CPUS           ((1 << CONFIG_SMP_NCPUS) - 1)
+
+#if !POWER_OF_TWO(CONFIG_PIDHASH_INITIAL_LENGTH)
+#  error "CONFIG_PIDHASH_INITIAL_LENGTH shall be power of two!"
+#endif
 
 /****************************************************************************
  * Public Data
@@ -623,7 +628,7 @@ void nx_start(void)
 
   /* Initialize the logic that determine unique process IDs. */
 
-  nxsched_npidhash() = 4;
+  nxsched_npidhash() = CONFIG_PIDHASH_INITIAL_LENGTH;
   while (nxsched_npidhash() <= CONFIG_SMP_NCPUS)
     {
       nxsched_npidhash() <<= 1;

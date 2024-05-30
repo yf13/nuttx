@@ -1937,3 +1937,10 @@ config GROUP_KILL_CHILDREN_TIMEOUT_MS
 		> 0 means wait timeout
 		= 0 means don't do kill signal
 
+config PIDHASH_INITIAL_LENGTH
+	int "Initial length of pid hash table"
+	default 4 if DEFAULT_SMALL
+	default 8 if !DEFAULT_SMALL
+	---help---
+		This specifies the initial length of pid table, it shall be
+		power of two.
