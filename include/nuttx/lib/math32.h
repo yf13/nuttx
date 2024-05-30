@@ -59,6 +59,10 @@
 #define LOG2_CEIL(n)  ((n) & (n - 1) ? FLS(n) : FLS(n) - 1)
 #define LOG2_FLOOR(n) (FLS(n) - 1)
 
+/* Checks if an integer is power-of-two at compile time */
+
+#define POWER_OF_TWO(n)       ((n) > 0 && ((n) & (n - 1)) == 0)
+
 /****************************************************************************
  * Public Types
  ****************************************************************************/
