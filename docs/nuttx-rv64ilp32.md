@@ -31,7 +31,7 @@ With toolchain knowledge and [some tweaks](https://github.com/apache/nuttx/pull/
 
 Thanks to NuttX's well designed structure, the `nuttx-ilp32` image can boot smoothly on the QEMU comes with the toolchain and `ostest` also passed, though there are still some cleanups left behind.
 
-## Initial comparison
+## QEMU results
 
 Here are initial comparisons between normal `lp64` and the `rv64ilp32`, the baseline configuration is `rv-virt/nsh64`. The toolchain used for `lp64` is the stock `gcc-riscv64-unknown-elf` package version 10.2.0, and the rv64ilp32 toolchain used is the 2024.05.23 release downloaded from URL above.
 
@@ -64,7 +64,7 @@ nsh> free
 
 We can see that the code size if `rv64ilp32` is slightly(2.13%) bigger, and data memory reduced 18% or 22% for static or dynamic regions.
 
-## The C extension
+### The C extension
 
 When sharing the initial comparison with RuyiSDK people, they suggested to turn off the compressed instruction extension `C` and recheck the text sizes.
 
@@ -80,3 +80,42 @@ $ size nuttx-*
 Experts further said that current RISC-V ISA C extension doesn't have enough considerations for the `rv64ilp32` ABI, thus code size is slightly larger when the ISA C extension is turned on.
 
 Let's hope the RISC-V ISA C extension can evolve to support `rv64ilp32` better in the future.
+
+
+## K230 results
+
+With a few more tweaks ending with [this patch](https://github.com/apache/nuttx/pull/12528), NuttX FLAT build can run on CanMV230:
+
+```
+Hit any key to stop autoboot:  0
+starting USB...
+Bus usb-otg@91540000: dwc2_usb usb-otg@91540000: Core Release: 4.30a
+USB DWC2
+scanning bus usb-otg@91540000 for devices... 2 USB Device(s) found
+       scanning usb for storage devices... 0 Storage Device(s) found
+Waiting for Ethernet connection... done.
+Using r8152_eth device
+TFTP from server 10.0.1.1; our IP address is 10.0.1.2
+Filename 'master.bin'.
+Load address: 0x8000000
+Loading: #############
+         1.7 MiB/s
+done
+Bytes transferred = 187236 (2db64 hex)
+## Starting application at 0x08000000 ...
+ABC
+NuttShell (NSH) NuttX-12.4.0
+nsh> cat /proc/version
+NuttX version 12.4.0 caa94ef64b-dirty Jun 19 2024 06:55:46 canmv230/nsh32
+nsh> free
+                 total       used       free    maxused    maxfree  nused  nfree
+      Umem:   16574332       6396   16567936       6752   16567904     19      2
+nsh> ps
+  PID GROUP PRI POLICY   TYPE    NPX STATE    EVENT     SIGMASK           STACK  USED  FILLED COMMAND
+    0     0   0 FIFO     Kthread   - Ready              0000000000000000 002032000816  40.1%  Idle_Task
+    1     1 100 RR       Task      - Running            0000000000000000 003024002096  69.3%  nsh_main
+nsh>
+```
+The data memory reducation is in line with that of QEMU. Performances of a few checked apps like [getprime](https://github.com/apache/nuttx-apps/tree/master/testing/getprime) and slightly tweaked [smallpt](https://www.kevinbeason.com/smallpt/) are no worse than that of the `rv64lp64` build, and one app [calib_udelay](https://github.com/apache/nuttx-apps/blob/master/examples/calib_udelay/calib_udelay_main.c) has 15% faster result.
+
+Note that this isn't a formal test due to limited set of apps at hand, but the result is basically in line with [those published results](https://mp.weixin.qq.com/s/rsF7kriYYaiWQYmHGYGjlg).
