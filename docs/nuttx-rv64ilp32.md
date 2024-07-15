@@ -12,14 +12,14 @@ So how can NuttX benefit from this `rv64ilp32` thing?
 
 ## The toolchain
 
-After downloading the [RuyiSDK rv64ilp32 toolchain](https://github.com/ruyisdk/riscv-gnu-toolchain-rv64ilp32/releases), playing the `hello` demo and raising questions to the friendly toolchain experts, concepts about how it works have been established.
+After downloading the [RuyiSDK rv64ilp32 toolchain](https://github.com/ruyisdk/riscv-gnu-toolchain-rv64ilp32/releases), playing the `hello` demo and raising questions to the friendly RuiyiSDK toolchain developers, concepts about how it works have been established.
 
-Here are the major points:
+The following are the major points:
 
-- The `rv64ilp32` program is of ELF-32 class, but with flag 0x25;
-- The `-rsicv64ilp32` named QEMU tools in the toolchain not only support the `rv64ilp32` program format, but also support masking of the higher 32-bit addresses used by the program;
+- The `rv64ilp32` program ABI is of ELF-32 class, but with flag 0x25;
+- The `-rsicv64ilp32` suffixed QEMU tools within the toolchain not only support `rv64ilp32` ABI, but also support masking of the higher 32-bit addresses on the fly;
 - The toolchain uses `-march=rv64`, `-mabi=ilp32` for rv64ilp32 binaries;
-- The compiler has `__riscv_xlen_t==64` and `sizeof(void*)==32` defined for programs to adapt themselves;
+- The compiler has `__riscv_xlen_t==64` and `sizeof(void*)==32` defined for programs to adapt themselves to this ABI;
 - Access to addresses beyond 4G space shall be done via assembly as compiled address has been limited in 32-bit.
 
 ## Building NuttX
@@ -29,7 +29,7 @@ With toolchain knowledge and [some tweaks](https://github.com/apache/nuttx/pull/
 - Add `rv64ilp32` toolchain in `arch/risc-v` Kconfig and Toolchain.cmake to support generation of nuttx-rv64ilp32 binary.
 - Add a type for register width data in `arch/risc-v` layer, with some tweaking of the code base to support both existing 64-bit and 32-bit ABIs and the new rv64ilp32 ABI.
 
-Thanks to NuttX's well designed structure, the `nuttx-ilp32` image can boot smoothly on the QEMU comes with the toolchain and `ostest` also passed, though there are still some cleanups left behind.
+Thanks to well designed structure of NuttX, the `nuttx-rv64ilp32` image can boot smoothly on QEMU and `ostest` also passed, though there are still some cleanups left behind.
 
 ## QEMU results
 
@@ -42,7 +42,7 @@ Static footprints with `C` extension:
 ```
 $ size nuttx-*
    text    data     bss     dec     hex filename
- 176861     397   10256  187514   2dc7a nuttx-ilp32
+ 176861     397   10256  187514   2dc7a nuttx-rv64ilp32
  173171     681   12416  186268   2d79c nuttx-lp64
 ```
 
@@ -66,20 +66,18 @@ We can see that the code size if `rv64ilp32` is slightly(2.13%) bigger, and data
 
 ### The C extension
 
-When sharing the initial comparison with RuyiSDK people, they suggested to turn off the compressed instruction extension `C` and recheck the text sizes.
+When sharing above initial comparison with XuanTie developer, I was suggested to turn off the compressed instruction extension `C` and recheck the text sizes.
 
 So here we have a another list, while the rv64ilp32 program's text size is smaller:
 
 ```
 $ size nuttx-*
    text     data      bss      dec      hex  filename
- 231321      397    10256   241974    3b136  nuttx-ilp32
+ 231321      397    10256   241974    3b136  nuttx-rv64ilp32
  231441      681    12416   244538    3bb3a  nuttx-lp64
 ```
 
-Experts further said that current RISC-V ISA C extension doesn't have enough considerations for the `rv64ilp32` ABI, thus code size is slightly larger when the ISA C extension is turned on.
-
-Let's hope the RISC-V ISA C extension can evolve to support `rv64ilp32` better in the future.
+The XuanTie developer futher exaplained that current RISC-V ISA C extension doesn't have enough considerations for the `rv64ilp32` ABI, thus code size is slightly larger when the C extension is used. Here we hope that the RISC-V ISA C extension can evolve to support `rv64ilp32` ABI better in the future.
 
 
 ## K230 results
@@ -116,6 +114,6 @@ nsh> ps
     1     1 100 RR       Task      - Running            0000000000000000 003024002096  69.3%  nsh_main
 nsh>
 ```
-The data memory reducation is in line with that of QEMU. Performances of a few checked apps like [getprime](https://github.com/apache/nuttx-apps/tree/master/testing/getprime) and slightly tweaked [smallpt](https://www.kevinbeason.com/smallpt/) are no worse than that of the `rv64lp64` build, and one app [calib_udelay](https://github.com/apache/nuttx-apps/blob/master/examples/calib_udelay/calib_udelay_main.c) has 15% faster result.
+The data memory reducation is in line with that of QEMU. Performances of a few checked apps like [getprime](https://github.com/apache/nuttx-apps/tree/master/testing/getprime) and slightly tweaked [smallpt](https://www.kevinbeason.com/smallpt/) are no worse than that of the `rv64lp64` build, and the [calib_udelay](https://github.com/apache/nuttx-apps/blob/master/examples/calib_udelay/calib_udelay_main.c) app even has 15% faster result.
 
 Note that this isn't a formal test due to limited set of apps at hand, but the result is basically in line with [those published results](https://mp.weixin.qq.com/s/rsF7kriYYaiWQYmHGYGjlg).
